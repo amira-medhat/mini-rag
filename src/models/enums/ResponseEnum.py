@@ -10,3 +10,5 @@ class ResponseSignal(Enum):
     FILE_UPLOAD_FAILED = "File upload failed"
     FILE_PROCESSED_SUCCESSFULLY = "Processing successful"
     FILE_PROCESSING_FAILED = "Processing failed"
+    ASSET_ALREADY_EXISTS = "Asset with this name already exists in the project"
+    NO_FILES_TO_PROCESS = "No files available to process in the project"
