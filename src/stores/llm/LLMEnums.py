@@ -1,4 +1,6 @@
 from enum import Enum
+from xml.dom.expatbuilder import DOCUMENT_NODE
+
 
 class LLMEnums(Enum):
     OPENAI = "OPENAI"
@@ -12,10 +14,24 @@ class LLMEnums(Enum):
     LLM_TYPE_CHAT = "chat"
     LLM_TYPE_COMPLETION = "completion"
     LLM_TYPE_EMBEDDING = "embedding"
-    
+
+
 class OpenAIEnums(Enum):
 
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
-    
+
+
+class CohereEnums(Enum):
+
+    SYSTEM = "SYSTEM"
+    USER = "USER"
+    ASSISTANT = "CHATBOT"
+    DOCUMENT = "search_document"
+    QUERY = "search_query"
+
+
+class DocumentTypeEnums(Enum):
+    DOCUMENT = "DOCUMENT"
+    QUERY = "QUERY"
