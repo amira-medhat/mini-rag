@@ -1,3 +1,4 @@
+from unittest.mock import DEFAULT
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -30,6 +31,9 @@ class Settings(BaseSettings):
     VECTOR_DB_PATH: str = None
     VECTOR_DB_DISTANCE_METHOD: str = None
     VECTOR_DB_TOP_K: int = None
+
+    DESIRED_LANGUAGE: str = None
+    DEFAULT_LANGUAGE: str = None
 
     class Config:
 

@@ -18,3 +18,4 @@ class ResponseSignal(Enum):
     PROJECT_INDEXED_SUCCESSFULLY = "Project indexed successfully"
     PROJECT_INDEX_INFO = "Project index info"
     SEARCH_IN_VECTORDB_ERROR = "Error searching in vector database"
+    ANSWER_GENERATION_ERROR = "Error generating answer"

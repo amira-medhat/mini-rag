@@ -5,6 +5,7 @@ from .routes.nlp import nlp_router
 from motor.motor_asyncio import AsyncIOMotorClient
 from .helpers.config import get_settings, Settings
 from .stores.llm.LLMProviderFactory import LLMProviderFactory
+from .stores.llm.templates.template_parser import TemplateParser
 from .stores.vectordb.VectorDBProviderFactory import VectorDBProviderFactory
 
 # from dotenv import load_dotenv
@@ -28,6 +29,7 @@ async def startup_span():
     app.vector_db_client = vectordb_factory.create(app_settings.VECTOR_DB_BACKEND)
     app.vector_db_client.connect()
 
+    app.template_parser = TemplateParser(language=app_settings.DESIRED_LANGUAGE, default_language=app_settings.DEFAULT_LANGUAGE)
 
 
 async def shutdown_span():

@@ -1,5 +1,7 @@
 import os
 import re
+
+from src.stores.llm.templates.locales import en
 from .BaseController import BaseController
 from ..models.db_schemes import Project, DataChunk
 from ..stores.llm.LLMEnums import DocumentTypeEnums
@@ -9,11 +11,12 @@ import logging
 
 class NlpController(BaseController):
     
-    def __init__(self, vector_db_client, generation_client, embedding_client):
+    def __init__(self, vector_db_client, generation_client, embedding_client, template_parser):
         super().__init__()
         self.vector_db_client = vector_db_client
         self.generation_client = generation_client
         self.embedding_client = embedding_client
+        self.template_parser = template_parser
         self.logger = logging.getLogger(__name__)
     
     def create_collection_name(self, project_id: str) -> str:
@@ -75,3 +78,37 @@ class NlpController(BaseController):
             self.logger.error(f"Error searching in Vector DB: {query}")
             return False
         return results
+
+    def answer_rag_question(self, project: Project, question: str, limit : int = 10):
+        answer, full_prompt, chat_history = None, None, None
+        search_results = self.search_from_vector_db(project=project, query=question, limit=limit)
+        if not search_results:
+            self.logger.error(f"No search results found for question: {question}")
+            return answer, full_prompt, chat_history
+
+        # Create the system prompt for the generation model
+        system_prompt = self.template_parser.load_template(group = "rag", key = "system_prompt")
+
+        # Create the document prompt for the retrieved documents
+        context_documents = [
+            self.template_parser.load_template(group = "rag", key = "document_prompt", vars={"doc_index": idx + 1, "document_text": doc.text})
+            for idx, doc in enumerate(search_results)
+        ]
+        context_prompt = "\n\n".join(context_documents)
+
+        footer_prompt = self.template_parser.load_template(group = "rag", key = "footer_prompt", vars={"query": question})
+
+        chat_history = [
+            self.generation_client.construct_prompt(system_prompt, self.generation_client.enums.SYSTEM.value),
+        ]
+
+        full_prompt = "\n\n".join([context_prompt, footer_prompt])
+                
+        # Generate the answer using the generation client
+
+        answer = self.generation_client.generate_text(
+            prompt=full_prompt,
+            chat_history=chat_history
+        )
+        return answer, full_prompt, chat_history
+

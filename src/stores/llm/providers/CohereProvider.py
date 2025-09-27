@@ -23,6 +23,7 @@ class CohereProvider(LLMInterface):
         self.embedding_model = None
         self.embedding_size = None
         self.client = cohere.ClientV2(api_key=self.api_key)
+        self.enums = CohereEnums
         self.logger = logging.getLogger(__name__)
 
     def process_text(self, text: str):

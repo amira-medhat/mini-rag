@@ -6,6 +6,7 @@ import os
 import aiofiles
 
 from src.routes.schemes import nlp
+from src.stores.llm.templates import template_parser
 from ..helpers.config import get_settings, Settings
 from ..controllers import DataController, BaseController, ProjectController, ProcessController
 from ..models.enums.ResponseEnum import ResponseSignal
@@ -89,7 +90,8 @@ async def search_index(request: Request, project_id: str, search_request: Search
     nlp_controller = NlpController(
     vector_db_client=request.app.vector_db_client,
     generation_client=request.app.generation_client,
-    embedding_client=request.app.embedding_client)
+    embedding_client=request.app.embedding_client,
+    template_parser=request.app.template_parser)
 
     results = nlp_controller.search_from_vector_db(project=project, query=search_request.query, limit=search_request.top_k)
     if not results:
@@ -101,4 +103,26 @@ async def search_index(request: Request, project_id: str, search_request: Search
 
     return JSONResponse(
         content={"results" : results_as_dicts}
+    )
+
+@nlp_router.post("/index/answer/{project_id}")
+async def answer_rag(request: Request, project_id: str, search_request: SearchRequest):
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+
+    nlp_controller = NlpController(
+    vector_db_client=request.app.vector_db_client,
+    generation_client=request.app.generation_client,
+    embedding_client=request.app.embedding_client,
+    template_parser=request.app.template_parser)
+
+    answer, full_prompt, chat_history = nlp_controller.answer_rag_question(project=project, question=search_request.query, limit=search_request.top_k)
+    if not answer:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": f"{ResponseSignal.ANSWER_GENERATION_ERROR.value}"}
+        )
+
+    return JSONResponse(
+        content={"answer" : answer, "full_prompt": full_prompt, "chat_history": chat_history}
     )
