@@ -13,8 +13,8 @@ class BaseController:
 
         database_path = os.path.join(self.database_dir, db_name)
 
-        if not os.path.exists(self.database_path):
-            os.makedirs(self.database_path)
+        if not os.path.exists(database_path):
+            os.makedirs(database_path)
 
         return database_path
 

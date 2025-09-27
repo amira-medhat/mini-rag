@@ -19,3 +19,8 @@ class DataChunk(BaseModel):
             "name": "idx_chunk_project_id",
             "unique": False}
         ]
+
+class RetrievedDocument(BaseModel):
+
+    similarity_score: float = Field(..., gt=0)
+    text: str

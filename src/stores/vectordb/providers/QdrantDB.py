@@ -5,7 +5,8 @@ from ..VectorDBEnums import DistanceMethodEnums
 from qdrant_client import models, QdrantClient
 import logging
 from typing import List
-
+import uuid
+from ....models.db_schemes import RetrievedDocument
 
 class QdrantDB(VectorDBInterface):
     
@@ -26,7 +27,7 @@ class QdrantDB(VectorDBInterface):
     def connect(self):
         try:
             self.client = QdrantClient(path=self.db_path)
-            self.logger.info(f"Connected to Qdrant at {self.host}:{self.port}")
+            self.logger.info(f"Connected to Qdrant at path {self.db_path}")
         except Exception as e:
             self.logger.error(f"Failed to connect to Qdrant: {e}")
 
@@ -72,7 +73,7 @@ class QdrantDB(VectorDBInterface):
     def delete_collection(self, collection_name: str):
         if self.is_collection_existed(collection_name):
             try:
-                return self.client.delete_collection(collection_name="{collection_name}")
+                return self.client.delete_collection(collection_name=collection_name)
             except Exception as e:
                 self.logger.error(f"Error deleting collection: {e}")
         else:
@@ -89,7 +90,7 @@ class QdrantDB(VectorDBInterface):
                 collection_name=collection_name,
                 points=[
                     models.PointStruct(
-                        # id=record_id,
+                        id=record_id,
                         vector=vector,
                         payload={"text": text, "metadata": metadata},
                     )
@@ -100,42 +101,62 @@ class QdrantDB(VectorDBInterface):
             self.logger.error(f"Error inserting point: {e}")
             return False
 
-    def insert_many(self, collection_name: str, texts: list, vectors: list, metadata: list = None
-    , record_ids: list = None, batch_size: int = 50):
+    def insert_many(self, collection_name: str, texts: list, vectors: list, metadata: list = None, record_ids: list = None, batch_size: int = 50):
         if metadata is None:
             metadata = [None] * len(texts)
 
         if record_ids is None:
             record_ids = [None] * len(texts)
 
+        # Process the data in batches
         for i in range(0, len(texts), batch_size):
-            batch_texts = texts[i:i + batch_size]
-            batch_vectors = vectors[i:i + batch_size]
-            batch_metadata = metadata[i:i + batch_size]
-            batch_record_ids = record_ids[i:i + batch_size]
+            # 1. BUILD THE BATCH FIRST
+            points_batch = []
+            
+            # Slice all data for the current batch
+            batch_end = i + batch_size
+            batch_ids = record_ids[i:batch_end]
+            batch_vectors = vectors[i:batch_end]
+            batch_texts = texts[i:batch_end]
+            batch_metadata = metadata[i:batch_end]
 
-            for x in range(len(batch_texts)):
-                points = [
+            # Create PointStruct for each item in the batch
+            for j in range(len(batch_texts)):
+                points_batch.append(
                     models.PointStruct(
-                        # id=batch_record_ids[x],
-                        vector=batch_vectors[x],
-                        payload={"text": batch_texts[x], "metadata": batch_metadata[x]},
+                        id=batch_ids[j],
+                        vector=batch_vectors[j],
+                        payload={"text": batch_texts[j], "metadata": batch_metadata[j]},
                     )
-                ]
-
-            try:
-                _ = self.client.upload_points(
-                    collection_name=collection_name,
-                    points=points,
                 )
-                return True
+
+            # 2. MAKE ONE API CALL PER BATCH
+            try:
+                self.client.upsert( 
+                    collection_name=collection_name,
+                    points=points_batch,
+                    wait=True
+                )
             except Exception as e:
-                self.logger.error(f"Error inserting points batch: {e}")
+                self.logger.error(f"Error inserting points batch starting at index {i}: {e}")
+                # 3. RETURN FALSE ONLY IF A BATCH FAILS
                 return False
 
+        # 4. RETURN TRUE AFTER ALL BATCHES ARE SUCCESSFULLY PROCESSED
+        return True
+
     def search_by_vector(self, collection_name: str, vector: list, limit: int = 10):
-        return self.client.search(
+        results = self.client.search(
             collection_name=collection_name,
             query_vector=vector,
             limit=limit,
         )
+
+        if results is None or len(results) == 0:
+            return None
+        
+        return [RetrievedDocument(
+            similarity_score=result.score,
+            text=result.payload.get("text", "")
+
+        ) for result in results]

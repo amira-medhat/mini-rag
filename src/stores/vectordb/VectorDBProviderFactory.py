@@ -1,4 +1,4 @@
-from ..vectordb.providers import QdrantDB
+from ..vectordb.providers.QdrantDB import QdrantDB
 from ..vectordb.VectorDBEnums import VectorDBEnums
 from ...controllers import BaseController
 

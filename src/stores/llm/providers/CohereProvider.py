@@ -1,8 +1,9 @@
-from ...LLMEnums import LLMEnums, CohereEnums
-from ...LLMInterface import LLMInterface
+from ..LLMEnums import LLMEnums, CohereEnums, DocumentTypeEnums
+from ..LLMInterface import LLMInterface
 import cohere
 import os
 import logging
+from typing import Union, List
 
 
 class CohereProvider(LLMInterface):
@@ -80,7 +81,7 @@ class CohereProvider(LLMInterface):
 
         return answer
 
-    def embed_text(self, text: str, document_type: str):
+    def embed_text(self, text: Union[str, List[str]], document_type: str):
         if self.client is None:
             # raise ValueError("OpenAI client is not initialized. Please set the API key and URL.")
             self.logger.error(
@@ -94,9 +95,13 @@ class CohereProvider(LLMInterface):
             )
             return None
 
-        if document_type == LLMEnums.DOCUMENT.value:
+        # Normalize input to a list of strings
+        if isinstance(text, str):
+            text = [text]
+
+        if document_type == DocumentTypeEnums.DOCUMENT.value:
             input_type = CohereEnums.DOCUMENT.value
-        if document_type == LLMEnums.QUERY.value:
+        if document_type == DocumentTypeEnums.QUERY.value:
             input_type = CohereEnums.QUERY.value
 
         response = self.client.embed(
@@ -117,7 +122,7 @@ class CohereProvider(LLMInterface):
             self.logger.error("Failed to get embeddings from Cohere.")
             return None
 
-        return embeddings[0][:]
+        return embeddings
 
     def construct_prompt(self, prompt: str, role: str):
         return {"role": role, "content": self.process_text(prompt)}

@@ -83,11 +83,11 @@ async def upload_data(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"message": f"{ResponseSignal.ASSET_ALREADY_EXISTS.value}: {file.filename}"}
             )
-            results.append({
-                "file_name": file.filename,
-                "status": "failed",
-                "message": ResponseSignal.ASSET_ALREADY_EXISTS.value
-            })
+            # results.append({
+            #     "file_name": file.filename,
+            #     "status": "failed",
+            #     "message": ResponseSignal.ASSET_ALREADY_EXISTS.value
+            # })
 
     return JSONResponse(content={"results": results})
 

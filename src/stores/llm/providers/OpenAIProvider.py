@@ -1,5 +1,5 @@
-from ...LLMInterface import LLMInterface
-from ...LLMEnums import LLMEnums, OpenAIEnums
+from ..LLMInterface import LLMInterface
+from ..LLMEnums import LLMEnums, OpenAIEnums
 from openai import OpenAI
 import os
 import logging
@@ -10,20 +10,18 @@ class OpenAIProvider(LLMInterface):
     def __init__(
         self,
         api_key: str,
-        api_url: str = None,
         default_input_max_tokens: int = 1000,
         default_output_max_tokens: int = 1000,
         default_temp: float = 0.1,
     ):
         self.api_key = api_key
-        self.api_url = api_url
         self.default_input_max_tokens = default_input_max_tokens
         self.default_output_max_tokens = default_output_max_tokens
         self.default_temp = default_temp
         self.generation_model = None
         self.embedding_model = None
         self.embedding_size = None
-        self.client = OpenAI(api_key=self.api_key, api_url=self.api_url)
+        self.client = OpenAI(api_key=self.api_key)
         self.logger = logging.getLogger(__name__)
 
     def process_text(self, text: str):
