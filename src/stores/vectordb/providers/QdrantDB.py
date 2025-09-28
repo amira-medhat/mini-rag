@@ -151,6 +151,7 @@ class QdrantDB(VectorDBInterface):
             query_vector=vector,
             limit=limit,
         )
+        
 
         if results is None or len(results) == 0:
             return None

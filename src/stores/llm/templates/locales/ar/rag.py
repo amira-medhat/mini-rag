@@ -1,8 +1,11 @@
+from string import Template
+
+
 ### RAG PROMPTS ###
 
 ### System ###
 
-system_prompt_ar = Template("\n".join([
+system_prompt = Template("\n".join([
     "أنت مساعد لتوليد إجابة للمستخدم.",
     "سيتم تزويدك بمجموعة من المستندات المرتبطة باستفسار المستخدم.",
     "يجب أن تقوم بتوليد إجابة بناءً على المستندات المقدمة.",
@@ -16,14 +19,14 @@ system_prompt_ar = Template("\n".join([
 
 ### Document ###
 
-document_prompt_ar = Template("\n".join([
+document_prompt = Template("\n".join([
     "# المستند رقم: $doc_index:",
     "# المحتوى: $document_text",
 ]))
 
 ### Footer ###
 
-footer_prompt_ar = Template("\n".join([
+footer_prompt = Template("\n".join([
     "استنادًا إلى المستندات أعلاه، أجب عن سؤال المستخدم.",
     "# الإجابة:",
 ]))

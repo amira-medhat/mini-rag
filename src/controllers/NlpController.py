@@ -103,7 +103,7 @@ class NlpController(BaseController):
         ]
 
         full_prompt = "\n\n".join([context_prompt, footer_prompt])
-                
+        
         # Generate the answer using the generation client
 
         answer = self.generation_client.generate_text(

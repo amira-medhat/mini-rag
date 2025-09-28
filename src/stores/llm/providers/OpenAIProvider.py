@@ -21,7 +21,7 @@ class OpenAIProvider(LLMInterface):
         self.generation_model = None
         self.embedding_model = None
         self.embedding_size = None
-        self.client = OpenAI(api_key=self.api_key)
+        self.client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=self.api_key)
         self.enums = OpenAIEnums
         self.logger = logging.getLogger(__name__)
 

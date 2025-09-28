@@ -30,7 +30,7 @@ class TemplateParser:
         
         #import the module from the file path
 
-        module = __import__(f"stores.llm.templates.locales.{target_language}.{group}", fromlist=[group])
+        module = __import__(f"src.stores.llm.templates.locales.{target_language}.{group}", fromlist=[group])
         if not module:
             return None
         

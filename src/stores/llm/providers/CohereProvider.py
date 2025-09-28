@@ -1,3 +1,4 @@
+from pyexpat.errors import messages
 from ..LLMEnums import LLMEnums, CohereEnums, DocumentTypeEnums
 from ..LLMInterface import LLMInterface
 import cohere
@@ -63,17 +64,12 @@ class CohereProvider(LLMInterface):
 
         response = self.client.chat(
             model=self.generation_model,
-            message=chat_history,
+            messages=chat_history,
             max_tokens=max_output_tokens,
             temperature=temp,
         )
 
-        if (
-            not response
-            or not response.generations
-            or len(response.generations) == 0
-            or not response.generations[0].text
-        ):
+        if not response or not response.message or not response.message.content:
             self.logger.error("Failed to get response from Cohere.")
             return None
 
