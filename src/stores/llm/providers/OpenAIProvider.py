@@ -10,18 +10,20 @@ class OpenAIProvider(LLMInterface):
     def __init__(
         self,
         api_key: str,
+        base_url: str,
         default_input_max_tokens: int = 1000,
         default_output_max_tokens: int = 1000,
         default_temp: float = 0.1,
     ):
         self.api_key = api_key
+        self.base_url = base_url
         self.default_input_max_tokens = default_input_max_tokens
         self.default_output_max_tokens = default_output_max_tokens
         self.default_temp = default_temp
         self.generation_model = None
         self.embedding_model = None
         self.embedding_size = None
-        self.client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=self.api_key)
+        self.client = OpenAI(base_url=self.base_url, api_key=self.api_key)
         self.enums = OpenAIEnums
         self.logger = logging.getLogger(__name__)
 

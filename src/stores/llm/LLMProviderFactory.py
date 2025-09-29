@@ -11,6 +11,7 @@ class LLMProviderFactory:
 
             return OpenAIProvider(
                 api_key=self.config.OPENAI_API_KEY,
+                base_url=self.config.OPENAI_BASE_URL,
                 default_input_max_tokens=self.config.INPUT_DEFAULT_MAX_TOKENS,
                 default_output_max_tokens=self.config.GENERATION_DEFAULT_MAX_TOKENS,
                 default_temp=self.config.GENERATION_DEFAULT_TEMPERATURE,
