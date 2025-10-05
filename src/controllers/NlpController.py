@@ -43,19 +43,20 @@ class NlpController(BaseController):
         
         
         batch_size = 50
-        if len(chunks) > batch_size:
-            for i in range(0, len(chunks), batch_size):
-                texts = [chunk.chunk_text for chunk in chunks[i:i+batch_size]]
-                vectors = self.embedding_client.embed_text(text=texts, document_type=DocumentTypeEnums.DOCUMENT.value)
-                metadatas = [chunk.chunk_metadata for chunk in chunks[i:i+batch_size]]
-                record_ids = list(range(i, i + batch_size))
-                inserted_count = self.vector_db_client.insert_many(
-                    collection_name=collection_name,
-                    texts=texts,
-                    vectors=vectors,
-                    metadata=metadatas,
-                    record_ids = record_ids
-                )
+        for i in range(0, len(chunks), batch_size):
+            texts = [chunk.chunk_text for chunk in chunks[i:i+batch_size]]
+            vectors = self.embedding_client.embed_text(text=texts, document_type=DocumentTypeEnums.DOCUMENT.value)
+            metadatas = [chunk.chunk_metadata for chunk in chunks[i:i+batch_size]]
+            record_ids = list(range(i, i + len(texts)))
+            success = self.vector_db_client.insert_many(
+                collection_name=collection_name,
+                texts=texts,
+                vectors=vectors,
+                metadata=metadatas,
+                record_ids=record_ids
+            )
+            if not success:
+                return False
         return True
 
     def search_from_vector_db(self, project: Project, query: str, limit: int = 10):

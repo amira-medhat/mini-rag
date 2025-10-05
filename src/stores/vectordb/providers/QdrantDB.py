@@ -5,7 +5,6 @@ from ..VectorDBEnums import DistanceMethodEnums
 from qdrant_client import models, QdrantClient
 import logging
 from typing import List
-import uuid
 from ....models.db_schemes import RetrievedDocument
 
 class QdrantDB(VectorDBInterface):

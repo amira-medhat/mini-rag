@@ -19,3 +19,4 @@ class ResponseSignal(Enum):
     PROJECT_INDEX_INFO = "Project index info"
     SEARCH_IN_VECTORDB_ERROR = "Error searching in vector database"
     ANSWER_GENERATION_ERROR = "Error generating answer"
+    COLLECTION_NOT_FOUND = "Collection not found"

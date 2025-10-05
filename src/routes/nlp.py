@@ -80,9 +80,19 @@ async def get_project_index_info(request: Request, project_id: str):
 
     collection_info = nlp_controller.get_vector_db_collection_info(project=project)
 
+    if not collection_info:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"message": f"{ResponseSignal.COLLECTION_NOT_FOUND.value}"}
+        )
+    if isinstance(collection_info, dict):
+        return JSONResponse(
+        content={"collection_info": collection_info}
+    )
     return JSONResponse(
         content={"collection_info": collection_info.dict()}
     )
+
 
 @nlp_router.post("/index/search/{project_id}")
 async def search_index(request: Request, project_id: str, search_request: SearchRequest):
