@@ -9,6 +9,7 @@ from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnums import DistanceMethodEnums
 from ....models.db_schemes import RetrievedDocument
 import logging
+import shutil
 
 class FaissDB(VectorDBInterface):
     def __init__(self, db_path: str, distance_method: str):
@@ -39,19 +40,23 @@ class FaissDB(VectorDBInterface):
         self.logger.info("Disconnected from FaissDB")
 
     def is_collection_existed(self, collection_name: str) -> bool:
-        index_path = os.path.join(self.db_path, f"{collection_name}.index")
-        return os.path.exists(index_path)
+        collection_path = os.path.join(self.db_path, collection_name)
+        return os.path.exists(collection_path)
 
     def create_collection(self, collection_name: str, embedding_size: int, do_reset: bool = False):
-        index_path = os.path.join(self.db_path, f"{collection_name}.index")
-        id_map_path = os.path.join(self.db_path, f"{collection_name}_id_map.pkl")
+        collection_path = os.path.join(self.db_path, collection_name)
+        index_path = os.path.join(collection_path, f"{collection_name}.index")
+        id_map_path = os.path.join(collection_path, f"{collection_name}_id_map.pkl")
 
         if do_reset and self.is_collection_existed(collection_name):
-            os.remove(index_path)
+            shutil.rmtree(collection_path)
+            if os.path.exists(index_path):
+                os.remove(index_path)
             if os.path.exists(id_map_path):
                 os.remove(id_map_path)
 
         if not self.is_collection_existed(collection_name):
+            os.makedirs(collection_path, exist_ok=True)
             with self.lock:
                 if self.distance_method == DistanceMethodEnums.COSINE.value or self.distance_method == DistanceMethodEnums.DOT.value:
                     base_index = faiss.IndexFlatIP(embedding_size)
@@ -68,14 +73,19 @@ class FaissDB(VectorDBInterface):
                     pickle.dump({}, f)
 
     def list_all_collections(self):
-        collections = []
-        for file in os.listdir(self.db_path):
-            if file.endswith(".index"):
-                collections.append(file[:-6])  # Remove .index extension
-        return collections
+        collections = os.listdir(self.db_path)
+        return [col[:-6] for col in collections if col.endswith(".index")]
+        # Alternatively, if you want to list directories instead of index files:
+
+        # collections = []
+        # for file in os.listdir(self.db_path):
+        #     if file.endswith(".index"):
+        #         collections.append(file[:-6])  # Remove .index extension
+        # return collections
 
     def get_collection_info(self, collection_name: str) -> dict:
-        index_path = os.path.join(self.db_path, f"{collection_name}.index")
+        collection_path = os.path.join(self.db_path, collection_name)
+        index_path = os.path.join(collection_path, f"{collection_name}.index")
         if not self.is_collection_existed(collection_name):
             raise ValueError(f"Collection '{collection_name}' does not exist")
 
@@ -88,11 +98,14 @@ class FaissDB(VectorDBInterface):
         }
     
     def delete_collection(self, collection_name: str):
-        index_path = os.path.join(self.db_path, f"{collection_name}.index")
-        id_map_path = os.path.join(self.db_path, f"{collection_name}_id_map.pkl")
+        collection_path = os.path.join(self.db_path, collection_name)
+        index_path = os.path.join(collection_path, f"{collection_name}.index")
+        id_map_path = os.path.join(collection_path, f"{collection_name}_id_map.pkl")
 
         if self.is_collection_existed(collection_name):
-            os.remove(index_path)
+            shutil.rmtree(collection_path)
+            if os.path.exists(index_path):
+                os.remove(index_path)
             if os.path.exists(id_map_path):
                 os.remove(id_map_path)
             self.logger.info(f"Collection '{collection_name}' deleted")
@@ -141,8 +154,9 @@ class FaissDB(VectorDBInterface):
             # But here we’ll batch convert per batch
             
             # Load index and metadata
-            index_path = os.path.join(self.db_path, f"{collection_name}.index")
-            id_map_path = os.path.join(self.db_path, f"{collection_name}_id_map.pkl")
+            collection_path = os.path.join(self.db_path, collection_name)
+            index_path = os.path.join(collection_path, f"{collection_name}.index")
+            id_map_path = os.path.join(collection_path, f"{collection_name}_id_map.pkl")
             
             index = faiss.read_index(index_path)
             with open(id_map_path, 'rb') as f:
@@ -192,8 +206,9 @@ class FaissDB(VectorDBInterface):
         # distances: shape (1, limit)
         # ids: shape (1, limit)
         # Load index and metadata
-        index_path = os.path.join(self.db_path, f"{collection_name}.index")
-        id_map_path = os.path.join(self.db_path, f"{collection_name}_id_map.pkl")
+        collection_path = os.path.join(self.db_path, collection_name)
+        index_path = os.path.join(collection_path, f"{collection_name}.index")
+        id_map_path = os.path.join(collection_path, f"{collection_name}_id_map.pkl")
         
         index = faiss.read_index(index_path)
         with open(id_map_path, 'rb') as f:

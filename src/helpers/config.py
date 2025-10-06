@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     DESIRED_LANGUAGE: str = None
     DEFAULT_LANGUAGE: str = None
 
+    POSTGRES_USERNAME: str = None
+    POSTGRES_PASSWORD: str = None
+    POSTGRES_HOST: str = None
+    POSTGRES_PORT: int = None
+    POSTGRES_MAIN_DB: str = None
+
     class Config:
 
         env_file = "src/.env"
