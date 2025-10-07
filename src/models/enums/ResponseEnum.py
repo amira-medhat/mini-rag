@@ -20,3 +20,5 @@ class ResponseSignal(Enum):
     SEARCH_IN_VECTORDB_ERROR = "Error searching in vector database"
     ANSWER_GENERATION_ERROR = "Error generating answer"
     COLLECTION_NOT_FOUND = "Collection not found"
+    NO_FILES_TO_DELETE = "No files available to delete in the project"
+    PROJECT_DATA_RESET_SUCCESSFULLY = "Project data reset successfully"

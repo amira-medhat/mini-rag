@@ -17,7 +17,7 @@ class QdrantDB(VectorDBInterface):
         if distance_method == DistanceMethodEnums.COSINE.value:
             self.distance_method = models.Distance.COSINE
         elif distance_method == DistanceMethodEnums.EUCLIDEAN.value:
-            self.distance_method = models.Distance.EUCLIDEAN 
+            self.distance_method = models.Distance.EUCLID 
         elif distance_method == DistanceMethodEnums.DOT.value:
             self.distance_method = models.Distance.DOT
         
@@ -100,7 +100,7 @@ class QdrantDB(VectorDBInterface):
             self.logger.error(f"Error inserting point: {e}")
             return False
 
-    def insert_many(self, collection_name: str, texts: list, vectors: list, metadata: list = None, record_ids: list = None, batch_size: int = 50):
+    def insert_many(self, collection_name: str, texts: list, vectors: list, metadata: list = None, record_ids: list = None, batch_size: int = 40):
         if metadata is None:
             metadata = [None] * len(texts)
 

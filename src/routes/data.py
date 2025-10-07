@@ -12,8 +12,7 @@ from .schemes import ProcessRequest
 from ..models.ProjectModel import ProjectModel
 from ..models.ChunkModel import ChunkModel
 from ..models.AssetModel import AssetModel
-from ..models.db_schemes import DataChunk
-from ..models.db_schemes import Asset
+from ..models.db_schemes import DataChunk, Asset
 from pymongo.errors import DuplicateKeyError
 
 logger = logging.getLogger('uvicorn.error')
@@ -24,7 +23,7 @@ async def upload_data(
     request: Request,
     files: List[UploadFile] = File(...),
     app_settings: Settings = Depends(get_settings),
-    project_id: str = None
+    project_id: int = None
 ):
     project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
     project = await project_model.get_project_or_create_one(project_id=project_id)
@@ -64,7 +63,7 @@ async def upload_data(
 
         # store the asset record in DB
         asset_resource = Asset(
-            asset_project_id=project.id,
+            asset_project_id=project.project_id,
             asset_type=AssetTypeEnum.TYPE_FILE.value,
             asset_name=file_id,
             asset_size=os.path.getsize(file_path)
@@ -76,7 +75,7 @@ async def upload_data(
                 "file_name": file.filename,
                 "status": "success",
                 "message": result_signal,
-                "file_id": str(asset_record.id)
+                "file_id": str(asset_record.asset_id)
             })
         except DuplicateKeyError:
             return JSONResponse(
@@ -91,10 +90,46 @@ async def upload_data(
 
     return JSONResponse(content={"results": results})
 
-
+@data_router.get("/reset_stored_data/{project_id}")
+async def reset_data_by_project_id(request: Request, project_id: int = None):
+    """
+    Delete all uploaded assets in the database and locally for a project and also their assosiated chunks.
+    """
+    project_model = await ProjectModel.create_instance(db_client=request.app.db_client)
+    project = await project_model.get_project_or_create_one(project_id=project_id)
+    
+    asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
+    chunk_model = await ChunkModel.create_instance(db_client=request.app.db_client)
+    
+    # Delete all chunks associated with this project
+    deleted_chunks_count = await chunk_model.delete_chunks_by_project_id(project_id=project.project_id)
+    
+    # Get all assets associated with this project and delete them from the database
+    project_assets = await asset_model.get_all_project_assets(asset_project_id=project.project_id, asset_type=AssetTypeEnum.TYPE_FILE.value)
+    
+    deleted_files_count = 0
+    for asset in project_assets:
+        file_path = os.path.join(ProjectController().get_project_path(project.project_id), asset.asset_name)
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                deleted_files_count += 1
+        except Exception as e:
+            logger.error(f"Error deleting file {file_path}: {e}")
+    
+    # Delete asset records from the database
+    deleted_assets_count = await asset_model.delete_assets_by_project_id(project_id=project.project_id, asset_type=AssetTypeEnum.TYPE_FILE.value)
+    
+    return JSONResponse(
+        content={"message": f"{ResponseSignal.PROJECT_DATA_RESET_SUCCESSFULLY.value}",
+                "deleted_chunks": deleted_chunks_count,
+                "deleted_files": deleted_files_count,
+                "deleted_assets": deleted_assets_count
+                }
+    )
 
 @data_router.post("/process/{project_id}")
-async def process_endpoint(request: Request, process_request: ProcessRequest, project_id: str = None):
+async def process_endpoint(request: Request, process_request: ProcessRequest, project_id: int = None):
     """
     Process the uploaded file.
     """
@@ -112,8 +147,8 @@ async def process_endpoint(request: Request, process_request: ProcessRequest, pr
         project_file_ids = [process_request.file_id]
     else:
         asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
-        project_assets = await asset_model.get_all_project_assets(asset_project_id=project.id, asset_type=AssetTypeEnum.TYPE_FILE.value)
-        project_file_ids = [asset["asset_name"] for asset in project_assets]
+        project_assets = await asset_model.get_all_project_assets(asset_project_id=project.project_id, asset_type=AssetTypeEnum.TYPE_FILE.value)
+        project_file_ids = [asset.asset_name for asset in project_assets]
         
     if not project_file_ids or len(project_file_ids) == 0:
         return JSONResponse(
@@ -129,11 +164,16 @@ async def process_endpoint(request: Request, process_request: ProcessRequest, pr
 
     
     if do_reset == 1:
-        _ = await chunk_model.delete_chunks_by_project_id(project_id=project.id)
+        _ = await chunk_model.delete_chunks_by_project_id(project_id=project.project_id)
     
 
     for file_id in project_file_ids:
         
+        # Get asset record for this file
+        asset_record = await asset_model.get_asset_record(asset_project_id=project.project_id, asset_name=file_id)
+        if not asset_record:
+            continue
+            
         file_content = process_controller.get_file_content(file_id=file_id)
         
         file_chunks = process_controller.process_file_content(
@@ -153,8 +193,8 @@ async def process_endpoint(request: Request, process_request: ProcessRequest, pr
             DataChunk(
                 chunk_text=chunk.page_content,
                 chunk_metadata=chunk.metadata,
-                chunk_order=index + 1,
-                chunk_project_id=project.id
+                chunk_asset_id=asset_record.asset_id,
+                chunk_project_id=project.project_id
             ) for index, chunk in enumerate(file_chunks)
         ]
         

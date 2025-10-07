@@ -19,7 +19,7 @@ class NlpController(BaseController):
         self.template_parser = template_parser
         self.logger = logging.getLogger(__name__)
     
-    def create_collection_name(self, project_id: str) -> str:
+    def create_collection_name(self, project_id: int) -> str:
         return f"collection_{project_id}".strip()
 
     def reset_vector_db_collection(self, project: Project):
@@ -41,13 +41,14 @@ class NlpController(BaseController):
         if not self.vector_db_client.is_collection_existed(collection_name=collection_name):
             self.vector_db_client.create_collection(collection_name=collection_name, embedding_size=self.embedding_client.embedding_size)
         
-        
-        batch_size = 50
+        batch_size = 60
         for i in range(0, len(chunks), batch_size):
-            texts = [chunk.chunk_text for chunk in chunks[i:i+batch_size]]
+            batch = chunks[i:i+batch_size]
+            texts = [chunk.chunk_text for chunk in batch]
             vectors = self.embedding_client.embed_text(text=texts, document_type=DocumentTypeEnums.DOCUMENT.value)
-            metadatas = [chunk.chunk_metadata for chunk in chunks[i:i+batch_size]]
-            record_ids = list(range(i, i + len(texts)))
+            self.logger.info(f"Embedding returned {len(vectors)} vectors, for {len(texts)} texts")
+            metadatas = [chunk.chunk_metadata for chunk in batch]
+            record_ids = [chunk.chunk_id for chunk in batch]  # ✅ use DB IDs, not batch index
             success = self.vector_db_client.insert_many(
                 collection_name=collection_name,
                 texts=texts,
@@ -55,6 +56,7 @@ class NlpController(BaseController):
                 metadata=metadatas,
                 record_ids=record_ids
             )
+
             if not success:
                 return False
         return True
